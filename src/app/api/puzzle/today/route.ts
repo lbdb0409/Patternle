@@ -6,6 +6,7 @@ import { getSession } from '@/lib/auth';
 export async function GET() {
   try {
     const dateKey = getTodayDateKey();
+    console.log('Today dateKey:', dateKey);
 
     // Get today's puzzle
     const puzzle = await db.puzzle.findUnique({
@@ -14,7 +15,7 @@ export async function GET() {
 
     if (!puzzle) {
       return NextResponse.json(
-        { error: 'No puzzle available for today. Please check back later.' },
+        { error: `No puzzle available for today (${dateKey}). Please check back later.` },
         { status: 404 }
       );
     }
