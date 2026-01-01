@@ -1,13 +1,20 @@
 import { getSession, isSubscribed } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { getTodayDateKey, formatDateForDisplay } from '@/lib/date-utils';
+import { getTodayDateKey, formatDateForDisplay, getPuzzleNumber } from '@/lib/date-utils';
 import Link from 'next/link';
-import { Lock, CheckCircle, XCircle, Circle } from 'lucide-react';
+import { Lock, CheckCircle, XCircle, Circle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { SubscriptionPrompt } from '@/components/subscription-prompt';
 
 export const dynamic = 'force-dynamic';
 
-export default async function ArchivePage() {
+const PUZZLES_PER_PAGE = 20;
+
+export default async function ArchivePage({
+  searchParams,
+}: {
+  searchParams: { page?: string };
+}) {
+  const currentPage = Math.max(1, parseInt(searchParams.page || '1', 10));
   const session = await getSession();
   const hasSubscription = await isSubscribed();
 
@@ -37,18 +44,31 @@ export default async function ArchivePage() {
     );
   }
 
-  // Fetch archive puzzles with user progress
+  // Get total count for pagination
   const today = getTodayDateKey();
+  const totalCount = await db.puzzle.count({
+    where: {
+      dateKey: { lt: today },
+      isPublished: true,
+    },
+  });
+
+  const totalPages = Math.max(1, Math.ceil(totalCount / PUZZLES_PER_PAGE));
+  const validPage = Math.min(currentPage, totalPages);
+  const skip = (validPage - 1) * PUZZLES_PER_PAGE;
+
+  // Fetch archive puzzles with user progress (paginated)
   const puzzles = await db.puzzle.findMany({
     where: {
       dateKey: { lt: today },
       isPublished: true,
     },
     orderBy: { dateKey: 'desc' },
+    skip,
+    take: PUZZLES_PER_PAGE,
     select: {
       id: true,
       dateKey: true,
-      puzzleNumber: true,
       difficulty: true,
       tags: true,
     },
@@ -67,6 +87,7 @@ export default async function ArchivePage() {
     const userProgress = progressMap.get(puzzle.id);
     return {
       ...puzzle,
+      puzzleNumber: getPuzzleNumber(puzzle.dateKey),
       formattedDate: formatDateForDisplay(puzzle.dateKey),
       tags: JSON.parse(puzzle.tags),
       solved: userProgress?.solved || false,
@@ -75,14 +96,31 @@ export default async function ArchivePage() {
     };
   });
 
-  const solvedCount = archivePuzzles.filter((p) => p.solved).length;
+  // Get total solved count (all pages)
+  const allPuzzleIds = await db.puzzle.findMany({
+    where: {
+      dateKey: { lt: today },
+      isPublished: true,
+    },
+    select: { id: true },
+  });
+
+  const solvedProgress = await db.progress.count({
+    where: {
+      userId: session.user.id,
+      puzzleId: { in: allPuzzleIds.map((p) => p.id) },
+      solved: true,
+    },
+  });
+
+  const solvedCount = solvedProgress;
 
   return (
     <div className="space-y-6">
       <div className="text-center">
         <h1 className="text-2xl font-bold mb-2">Puzzle Archive</h1>
         <p className="text-gray-500">
-          {solvedCount} of {archivePuzzles.length} puzzles solved
+          {solvedCount} of {totalCount} puzzles solved
         </p>
       </div>
 
@@ -120,6 +158,103 @@ export default async function ArchivePage() {
           ))}
         </div>
       )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <nav className="flex items-center justify-center gap-1 pt-4">
+          {/* Previous button */}
+          {validPage > 1 ? (
+            <Link
+              href={`/archive?page=${validPage - 1}`}
+              className="flex items-center justify-center w-10 h-10 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              aria-label="Previous page"
+            >
+              <ChevronLeft size={20} />
+            </Link>
+          ) : (
+            <div className="flex items-center justify-center w-10 h-10 rounded-lg border border-gray-200 dark:border-gray-700 opacity-50 cursor-not-allowed">
+              <ChevronLeft size={20} />
+            </div>
+          )}
+
+          {/* Page numbers */}
+          <div className="flex items-center gap-1">
+            {generatePageNumbers(validPage, totalPages).map((pageNum, idx) =>
+              pageNum === '...' ? (
+                <span key={`ellipsis-${idx}`} className="px-2 text-gray-400">
+                  ...
+                </span>
+              ) : (
+                <Link
+                  key={pageNum}
+                  href={`/archive?page=${pageNum}`}
+                  className={`flex items-center justify-center min-w-[2.5rem] h-10 px-3 rounded-lg border transition-colors ${
+                    pageNum === validPage
+                      ? 'bg-primary-600 text-white border-primary-600'
+                      : 'border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800'
+                  }`}
+                >
+                  {pageNum}
+                </Link>
+              )
+            )}
+          </div>
+
+          {/* Next button */}
+          {validPage < totalPages ? (
+            <Link
+              href={`/archive?page=${validPage + 1}`}
+              className="flex items-center justify-center w-10 h-10 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              aria-label="Next page"
+            >
+              <ChevronRight size={20} />
+            </Link>
+          ) : (
+            <div className="flex items-center justify-center w-10 h-10 rounded-lg border border-gray-200 dark:border-gray-700 opacity-50 cursor-not-allowed">
+              <ChevronRight size={20} />
+            </div>
+          )}
+        </nav>
+      )}
     </div>
   );
+}
+
+/**
+ * Generates an array of page numbers to display, with ellipsis for gaps.
+ * Shows: first page, last page, current page, and 1-2 pages around current.
+ */
+function generatePageNumbers(current: number, total: number): (number | '...')[] {
+  if (total <= 7) {
+    return Array.from({ length: total }, (_, i) => i + 1);
+  }
+
+  const pages: (number | '...')[] = [];
+
+  // Always show first page
+  pages.push(1);
+
+  // Calculate range around current page
+  const start = Math.max(2, current - 1);
+  const end = Math.min(total - 1, current + 1);
+
+  // Add ellipsis after first page if needed
+  if (start > 2) {
+    pages.push('...');
+  }
+
+  // Add pages around current
+  for (let i = start; i <= end; i++) {
+    pages.push(i);
+  }
+
+  // Add ellipsis before last page if needed
+  if (end < total - 1) {
+    pages.push('...');
+  }
+
+  // Always show last page
+  pages.push(total);
+
+  return pages;
 }
