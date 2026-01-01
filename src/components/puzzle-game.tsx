@@ -231,7 +231,9 @@ export function PuzzleGame({ dateKey, isPractice = false }: PuzzleGameProps) {
         <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
           {isPractice ? 'Practice Mode' : `Puzzle #${currentPuzzle.puzzleNumber}`}
         </div>
-        <div className="text-base font-medium text-slate-600 dark:text-slate-300">{currentPuzzle.formattedDate}</div>
+        {!isPractice && (
+          <div className="text-base font-medium text-slate-600 dark:text-slate-300">{currentPuzzle.formattedDate}</div>
+        )}
       </div>
 
       {/* Sequence */}
