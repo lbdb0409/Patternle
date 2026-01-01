@@ -105,26 +105,75 @@ export async function createBillingPortalSession(
 }
 
 /**
- * Handles Stripe webhook events.
+ * Handles Stripe webhook events with robust error handling.
  */
 export async function handleStripeWebhook(event: Stripe.Event): Promise<void> {
+  console.log(`Processing Stripe webhook: ${event.type}`);
+
   switch (event.type) {
     case 'checkout.session.completed': {
       const session = event.data.object as Stripe.Checkout.Session;
       const userId = session.metadata?.userId;
       const subscriptionId = session.subscription as string;
+      const customerId = session.customer as string;
 
-      if (userId && subscriptionId) {
+      console.log(`Checkout completed - userId: ${userId}, subscriptionId: ${subscriptionId}, customerId: ${customerId}`);
+
+      if (subscriptionId) {
         const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-        await db.subscription.update({
-          where: { userId },
-          data: {
-            stripeSubscriptionId: subscriptionId,
-            status: subscription.status,
-            currentPeriodEnd: new Date(subscription.current_period_end * 1000),
-            cancelAtPeriodEnd: subscription.cancel_at_period_end,
-          },
-        });
+
+        // Try to update by userId first
+        if (userId) {
+          try {
+            await db.subscription.upsert({
+              where: { userId },
+              create: {
+                userId,
+                stripeCustomerId: customerId,
+                stripeSubscriptionId: subscriptionId,
+                status: subscription.status,
+                currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+                cancelAtPeriodEnd: subscription.cancel_at_period_end,
+              },
+              update: {
+                stripeCustomerId: customerId,
+                stripeSubscriptionId: subscriptionId,
+                status: subscription.status,
+                currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+                cancelAtPeriodEnd: subscription.cancel_at_period_end,
+              },
+            });
+            console.log(`Subscription record updated for userId: ${userId}`);
+          } catch (error) {
+            console.error(`Failed to update subscription for userId ${userId}:`, error);
+            throw error;
+          }
+        } else if (customerId) {
+          // Fallback: try to find by customer ID
+          try {
+            const existing = await db.subscription.findUnique({
+              where: { stripeCustomerId: customerId },
+            });
+
+            if (existing) {
+              await db.subscription.update({
+                where: { stripeCustomerId: customerId },
+                data: {
+                  stripeSubscriptionId: subscriptionId,
+                  status: subscription.status,
+                  currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+                  cancelAtPeriodEnd: subscription.cancel_at_period_end,
+                },
+              });
+              console.log(`Subscription record updated for customerId: ${customerId}`);
+            } else {
+              console.warn(`No subscription record found for customerId: ${customerId}`);
+            }
+          } catch (error) {
+            console.error(`Failed to update subscription for customerId ${customerId}:`, error);
+            throw error;
+          }
+        }
       }
       break;
     }
@@ -133,19 +182,27 @@ export async function handleStripeWebhook(event: Stripe.Event): Promise<void> {
       const subscription = event.data.object as Stripe.Subscription;
       const customerId = subscription.customer as string;
 
-      const sub = await db.subscription.findUnique({
-        where: { stripeCustomerId: customerId },
-      });
+      console.log(`Subscription updated - customerId: ${customerId}, status: ${subscription.status}`);
 
-      if (sub) {
-        await db.subscription.update({
+      try {
+        const result = await db.subscription.updateMany({
           where: { stripeCustomerId: customerId },
           data: {
+            stripeSubscriptionId: subscription.id,
             status: subscription.status,
             currentPeriodEnd: new Date(subscription.current_period_end * 1000),
             cancelAtPeriodEnd: subscription.cancel_at_period_end,
           },
         });
+
+        if (result.count === 0) {
+          console.warn(`No subscription record found to update for customerId: ${customerId}`);
+        } else {
+          console.log(`Updated ${result.count} subscription record(s) for customerId: ${customerId}`);
+        }
+      } catch (error) {
+        console.error(`Failed to update subscription for customerId ${customerId}:`, error);
+        throw error;
       }
       break;
     }
@@ -154,13 +211,21 @@ export async function handleStripeWebhook(event: Stripe.Event): Promise<void> {
       const subscription = event.data.object as Stripe.Subscription;
       const customerId = subscription.customer as string;
 
-      await db.subscription.updateMany({
-        where: { stripeCustomerId: customerId },
-        data: {
-          status: 'canceled',
-          stripeSubscriptionId: null,
-        },
-      });
+      console.log(`Subscription deleted - customerId: ${customerId}`);
+
+      try {
+        await db.subscription.updateMany({
+          where: { stripeCustomerId: customerId },
+          data: {
+            status: 'canceled',
+            stripeSubscriptionId: null,
+          },
+        });
+        console.log(`Marked subscription as canceled for customerId: ${customerId}`);
+      } catch (error) {
+        console.error(`Failed to cancel subscription for customerId ${customerId}:`, error);
+        throw error;
+      }
       break;
     }
 
@@ -168,10 +233,17 @@ export async function handleStripeWebhook(event: Stripe.Event): Promise<void> {
       const invoice = event.data.object as Stripe.Invoice;
       const customerId = invoice.customer as string;
 
-      await db.subscription.updateMany({
-        where: { stripeCustomerId: customerId },
-        data: { status: 'past_due' },
-      });
+      console.log(`Payment failed - customerId: ${customerId}`);
+
+      try {
+        await db.subscription.updateMany({
+          where: { stripeCustomerId: customerId },
+          data: { status: 'past_due' },
+        });
+      } catch (error) {
+        console.error(`Failed to mark subscription as past_due for customerId ${customerId}:`, error);
+        throw error;
+      }
       break;
     }
 

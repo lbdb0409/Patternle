@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { format } from 'date-fns';
 import { SubscribeButton } from '@/components/subscribe-button';
 import { ManageSubscriptionButton } from '@/components/manage-subscription-button';
+import { RestorePurchaseButton } from '@/components/restore-purchase-button';
 import { SignOutButton } from '@/components/sign-out-button';
 import { CheckCircle, XCircle, Crown, Calendar, Flame } from 'lucide-react';
 
@@ -94,6 +95,11 @@ export default async function AccountPage() {
             </div>
 
             <SubscribeButton />
+
+            <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+              <p className="text-xs text-gray-400 mb-2">Already purchased? Sync your subscription:</p>
+              <RestorePurchaseButton />
+            </div>
           </div>
         )}
       </div>
