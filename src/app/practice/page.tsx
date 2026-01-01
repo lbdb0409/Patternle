@@ -3,8 +3,21 @@ import Link from 'next/link';
 import { Lock } from 'lucide-react';
 import { SubscriptionPrompt } from '@/components/subscription-prompt';
 import { PracticeContent } from '@/components/practice-content';
+import type { Metadata } from 'next';
 
 export const dynamic = 'force-dynamic';
+
+export const metadata: Metadata = {
+  title: 'Practice Mode - Patternle | Unlimited Number Puzzles',
+  description: 'Practice unlimited number sequence puzzles on Patternle! Train your brain with endless pattern recognition challenges. Like Wordle practice mode for math lovers.',
+  alternates: {
+    canonical: 'https://www.patternle.net/practice',
+  },
+  openGraph: {
+    title: 'Patternle Practice Mode - Unlimited Puzzles',
+    description: 'Unlimited number sequence puzzles to practice and improve your pattern recognition skills!',
+  },
+};
 
 export default async function PracticePage() {
   const session = await getSession();

@@ -4,8 +4,21 @@ import { getTodayDateKey, formatDateForDisplay, getPuzzleNumber } from '@/lib/da
 import Link from 'next/link';
 import { Lock, CheckCircle, XCircle, Circle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { SubscriptionPrompt } from '@/components/subscription-prompt';
+import type { Metadata } from 'next';
 
 export const dynamic = 'force-dynamic';
+
+export const metadata: Metadata = {
+  title: 'Puzzle Archive - Patternle | Play Past Daily Number Puzzles',
+  description: 'Access the Patternle puzzle archive! Play hundreds of past daily number sequence puzzles. Like Wordle archives but for math. Track your progress and solve them all.',
+  alternates: {
+    canonical: 'https://www.patternle.net/archive',
+  },
+  openGraph: {
+    title: 'Patternle Puzzle Archive - Past Daily Challenges',
+    description: 'Play past Patternle puzzles from the archive. Hundreds of number sequence puzzles to solve!',
+  },
+};
 
 const PUZZLES_PER_PAGE = 20;
 
@@ -117,6 +130,27 @@ export default async function ArchivePage({
 
   return (
     <div className="space-y-6">
+      {/* Hidden SEO content for archive page */}
+      <div className="sr-only" aria-hidden="true">
+        <h1>Patternle Puzzle Archive - Play Past Daily Number Puzzles</h1>
+        <p>
+          Browse and play past Patternle puzzles from the archive. Like Wordle archives, Nerdle history,
+          and Mathler past puzzles, our archive lets you revisit and solve previous daily challenges.
+          Perfect for puzzle enthusiasts who want more number sequence games, pattern recognition practice,
+          and brain training exercises.
+        </p>
+        <p>
+          Each puzzle features unique number sequences including arithmetic progressions, geometric sequences,
+          Fibonacci patterns, prime number sequences, and more. Track your progress, compete for completion,
+          and improve your pattern recognition skills.
+        </p>
+        <p>
+          Keywords: puzzle archive, past puzzles, wordle archive, nerdle history, mathler past games,
+          number sequence collection, pattern puzzles, daily puzzle history, brain games archive,
+          math puzzle collection, sequence games, logic puzzles
+        </p>
+      </div>
+
       <div className="text-center">
         <h1 className="text-2xl font-bold mb-2">Puzzle Archive</h1>
         <p className="text-gray-500">
