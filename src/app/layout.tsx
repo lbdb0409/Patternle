@@ -10,6 +10,22 @@ export const metadata: Metadata = {
   title: 'Patternle - Daily Number Puzzle',
   description: 'A daily number sequence puzzle game. Figure out the pattern and guess what comes next!',
   keywords: ['puzzle', 'number game', 'sequence', 'pattern', 'daily puzzle', 'math game', 'patternle'],
+  icons: {
+    icon: '/favicon.jpg',
+    apple: '/favicon.jpg',
+  },
+  openGraph: {
+    title: 'Patternle - Daily Number Puzzle',
+    description: 'A daily number sequence puzzle game. Figure out the pattern and guess what comes next!',
+    url: 'https://patternle.net',
+    siteName: 'Patternle',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary',
+    title: 'Patternle - Daily Number Puzzle',
+    description: 'A daily number sequence puzzle game. Figure out the pattern and guess what comes next!',
+  },
 };
 
 export default function RootLayout({

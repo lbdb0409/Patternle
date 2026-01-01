@@ -45,3 +45,4 @@ prisma/dev.db-journal
 .idea/
 .vscode/
 .claude/
+.env.production
