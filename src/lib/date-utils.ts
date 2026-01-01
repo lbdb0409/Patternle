@@ -72,7 +72,7 @@ export function getDateKeyOffset(days: number): string {
  * Calculates the puzzle number based on date (days since launch).
  */
 export function getPuzzleNumber(dateKey: string): number {
-  const launchDate = new Date('2024-01-01');
+  const launchDate = new Date('2026-01-01');
   const targetDate = parseDateKey(dateKey);
   const diffTime = targetDate.getTime() - launchDate.getTime();
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));

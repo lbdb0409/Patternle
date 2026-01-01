@@ -55,10 +55,13 @@ export async function GET() {
     const isSolved = progress?.solved || false;
     const isFailed = attemptsUsed >= 5 && !isSolved;
 
+    // Compute puzzle number dynamically from date
+    const computedPuzzleNumber = getPuzzleNumber(puzzle.dateKey);
+
     const response = {
       id: puzzle.id,
       dateKey: puzzle.dateKey,
-      puzzleNumber: puzzle.puzzleNumber,
+      puzzleNumber: computedPuzzleNumber,
       formattedDate: formatDateForDisplay(puzzle.dateKey),
       difficulty: puzzle.difficulty,
       tags,

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { getTodayDateKey, formatDateForDisplay, isPast, isFuture } from '@/lib/date-utils';
+import { getTodayDateKey, formatDateForDisplay, isPast, isFuture, getPuzzleNumber } from '@/lib/date-utils';
 import { getSession, isSubscribed } from '@/lib/auth';
 
 export async function GET(
@@ -96,7 +96,7 @@ export async function GET(
     const response = {
       id: puzzle.id,
       dateKey: puzzle.dateKey,
-      puzzleNumber: puzzle.puzzleNumber,
+      puzzleNumber: getPuzzleNumber(puzzle.dateKey),
       formattedDate: formatDateForDisplay(puzzle.dateKey),
       difficulty: puzzle.difficulty,
       tags,

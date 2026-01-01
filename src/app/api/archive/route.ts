@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getSession, isSubscribed } from '@/lib/auth';
-import { getTodayDateKey, formatDateForDisplay } from '@/lib/date-utils';
+import { getTodayDateKey, formatDateForDisplay, getPuzzleNumber } from '@/lib/date-utils';
 
 export async function GET() {
   try {
@@ -50,13 +50,13 @@ export async function GET() {
 
     const progressMap = new Map(progress.map((p) => [p.puzzleId, p]));
 
-    // Format response
+    // Format response - compute puzzle numbers dynamically
     const archivePuzzles = puzzles.map((puzzle) => {
       const userProgress = progressMap.get(puzzle.id);
       return {
         id: puzzle.id,
         dateKey: puzzle.dateKey,
-        puzzleNumber: puzzle.puzzleNumber,
+        puzzleNumber: getPuzzleNumber(puzzle.dateKey),
         formattedDate: formatDateForDisplay(puzzle.dateKey),
         difficulty: puzzle.difficulty,
         tags: JSON.parse(puzzle.tags),
