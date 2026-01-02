@@ -20,6 +20,7 @@
     "@auth/prisma-adapter": "^2.0.0",
     "@prisma/client": "^5.10.0",
     "@stripe/stripe-js": "^2.4.0",
+    "@vercel/analytics": "^1.6.1",
     "bcryptjs": "^3.0.3",
     "canvas-confetti": "^1.9.4",
     "class-variance-authority": "^0.7.0",
