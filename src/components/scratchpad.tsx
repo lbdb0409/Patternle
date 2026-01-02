@@ -7,11 +7,12 @@ import { cn } from '@/lib/utils';
 interface ScratchpadProps {
   isOpen: boolean;
   onClose: () => void;
+  sequence?: number[];
 }
 
 type Tool = 'pen' | 'eraser';
 
-export function Scratchpad({ isOpen, onClose }: ScratchpadProps) {
+export function Scratchpad({ isOpen, onClose, sequence }: ScratchpadProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [tool, setTool] = useState<Tool>('pen');
@@ -120,6 +121,26 @@ export function Scratchpad({ isOpen, onClose }: ScratchpadProps) {
             <X size={20} />
           </button>
         </div>
+
+        {/* Show the sequence for reference */}
+        {sequence && sequence.length > 0 && (
+          <div className="mb-3 p-3 bg-slate-100 dark:bg-slate-800 rounded-lg">
+            <div className="text-xs text-slate-500 dark:text-slate-400 mb-1.5 font-medium">Sequence:</div>
+            <div className="flex items-center justify-center gap-2 flex-wrap">
+              {sequence.map((num, idx) => (
+                <span
+                  key={idx}
+                  className="inline-flex items-center justify-center min-w-[2.5rem] h-9 px-2 bg-white dark:bg-slate-700 rounded-lg font-mono font-semibold text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-600 shadow-sm"
+                >
+                  {num}
+                </span>
+              ))}
+              <span className="inline-flex items-center justify-center min-w-[2.5rem] h-9 px-2 bg-primary-100 dark:bg-primary-900/30 rounded-lg font-mono font-semibold text-primary-600 dark:text-primary-400 border-2 border-dashed border-primary-300 dark:border-primary-700">
+                ?
+              </span>
+            </div>
+          </div>
+        )}
 
         <div className="flex gap-2 mb-3">
           <button

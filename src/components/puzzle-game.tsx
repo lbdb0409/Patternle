@@ -371,6 +371,7 @@ export function PuzzleGame({ dateKey, isPractice = false }: PuzzleGameProps) {
       <Scratchpad
         isOpen={showScratchpad}
         onClose={() => setShowScratchpad(false)}
+        sequence={currentPuzzle.sequences[currentPuzzle.primarySequenceIndex] || currentPuzzle.sequences[0]}
       />
     </div>
   );
