@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { Lightbulb, PenTool, Loader2 } from 'lucide-react';
+import confetti from 'canvas-confetti';
 import { SequenceDisplay } from './sequence-display';
 import { GuessInput } from './guess-input';
 import { GuessHistory } from './guess-history';
@@ -37,6 +38,59 @@ export function PuzzleGame({ dateKey, isPractice = false }: PuzzleGameProps) {
   } = useGameStore();
 
   const [lastResult, setLastResult] = useState<'correct' | 'incorrect' | null>(null);
+  const hasTriggeredConfetti = useRef(false);
+
+  // Confetti celebration effect
+  const triggerConfetti = useCallback(() => {
+    const duration = 3000;
+    const end = Date.now() + duration;
+
+    const colors = ['#10b981', '#34d399', '#6ee7b7', '#fbbf24', '#f59e0b'];
+
+    (function frame() {
+      confetti({
+        particleCount: 3,
+        angle: 60,
+        spread: 55,
+        origin: { x: 0, y: 0.7 },
+        colors: colors,
+      });
+      confetti({
+        particleCount: 3,
+        angle: 120,
+        spread: 55,
+        origin: { x: 1, y: 0.7 },
+        colors: colors,
+      });
+
+      if (Date.now() < end) {
+        requestAnimationFrame(frame);
+      }
+    })();
+
+    // Big burst in the center
+    setTimeout(() => {
+      confetti({
+        particleCount: 100,
+        spread: 100,
+        origin: { x: 0.5, y: 0.5 },
+        colors: colors,
+      });
+    }, 250);
+  }, []);
+
+  // Trigger confetti when puzzle is solved
+  useEffect(() => {
+    if (lastResult === 'correct' && !hasTriggeredConfetti.current) {
+      hasTriggeredConfetti.current = true;
+      triggerConfetti();
+    }
+  }, [lastResult, triggerConfetti]);
+
+  // Reset confetti flag when puzzle changes
+  useEffect(() => {
+    hasTriggeredConfetti.current = false;
+  }, [currentPuzzle?.id]);
 
   const fetchPuzzle = useCallback(async () => {
     setLoading(true);
